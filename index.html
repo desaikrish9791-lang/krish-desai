@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="script.js"></script>
+     <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1f79d3;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 8px;
+            margin: 6px 0;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .task {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        .task button {
+            width: auto;
+            margin-right: 5px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Task Manager</h2>
+
+    <!-- Task Form -->
+    <input type="text" id="title" placeholder="Task Title">
+    <input type="text" id="description" placeholder="Task Description">
+    <input type="date" id="dueDate">
+    <select id="priority">
+        <option value="">Select Priority</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+    </select>
+    <button onclick="addTask()">Add Task</button>
+
+    <!-- Filters -->
+    <div class="filters">
+        <select id="filterPriority" onchange="displayTasks()">
+            <option value="">All Priorities</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+        </select>
+
+        <input type="text" id="search" placeholder="Search task..." onkeyup="displayTasks()">
+    </div>
+
+    <!-- Task List -->
+    <div id="taskList"></div>
+</div>
+
+<script>
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    let editId = null;
+
+    // Save to Local Storage
+    function saveTasks() {
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    // Add Task
+    function addTask() {
+        const title = document.getElementById("title").value.trim();
+        const description = document.getElementById("description").value.trim();
+        const dueDate = document.getElementById("dueDate").value;
+        const priority = document.getElementById("priority").value;
+
+        if (!title || !dueDate) {
+            alert("Task title and due date are required!");
+            return;
+        }
+
+        if (editId) {
+            tasks = tasks.map(task =>
+                task.id === editId ? { ...task, title, description, dueDate, priority } : task
+            );
+            editId = null;
+        } else {
+            tasks.push({
+                id: Date.now(),
+                title,
+                description,
+                dueDate,
+                priority
+            });
+        }
+
+        saveTasks();
+        clearInputs();
+        displayTasks();
+    }
+
+    // Display Tasks
+    function displayTasks() {
+        const taskList = document.getElementById("taskList");
+        const filterPriority = document.getElementById("filterPriority").value;
+        const searchText = document.getElementById("search").value.toLowerCase();
+
+        taskList.innerHTML = "";
+
+        tasks
+            .filter(task =>
+                (filterPriority === "" || task.priority === filterPriority) &&
+                task.title.toLowerCase().includes(searchText)
+            )
+            .forEach(task => {
+                const div = document.createElement("div");
+                div.className = "task";
+
+                div.innerHTML = `
+                    <h3>${task.title}</h3>
+                    <p>${task.description}</p>
+                    <p><strong>Due:</strong> ${task.dueDate}</p>
+                    <p><strong>Priority:</strong> ${task.priority}</p>
+                    <button onclick="editTask(${task.id})">Edit</button>
+                    <button onclick="deleteTask(${task.id})">Delete</button>
+                `;
+
+                taskList.appendChild(div);
+            });
+    }
+
+    // Edit Task
+    function editTask(id) {
+        const task = tasks.find(t => t.id === id);
+        document.getElementById("title").value = task.title;
+        document.getElementById("description").value = task.description;
+        document.getElementById("dueDate").value = task.dueDate;
+        document.getElementById("priority").value = task.priority;
+        editId = id;
+    }
+
+    // Delete Task
+    function deleteTask(id) {
+        tasks = tasks.filter(task => task.id !== id);
+        saveTasks();
+        displayTasks();
+    }
+
+    // Clear Inputs
+    function clearInputs() {
+        document.getElementById("title").value = "";
+        document.getElementById("description").value = "";
+        document.getElementById("dueDate").value = "";
+        document.getElementById("priority").value = "";
+    }
+
+    // Load Tasks on Page Load
+    displayTasks();
+</script>
+
+</body>
+</html>
